@@ -20,6 +20,7 @@ class Solution:
 
     def get_objective(self):
         objective = 0
+        #print(self.bin_list)
         for bin in self.bin_list:
             if bin.item_list:
                 objective = objective + 1
@@ -106,60 +107,41 @@ class VNS:
     # def get_neighbourhood_list(self):
     #     print("do not need any return")
 
+    # First Descent
     def perform_local_search(self, solution, neighbourhood_index):
-        if neighbourhood_index != 0:
-            # print("dsdfefe")
-            solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
-                                                    solution.problem.capacity)
-        else:
-            solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
-        #     total_times = 0
-        #     no_improve_times = 0
-        #     best_solution = copy.deepcopy(solution)
-        #     while (no_improve_times < 20) and (total_times < math.pow(len(solution.bin_list), neighbourhood_index + 1)):
-        #
-        #         total_times = total_times + 1
-        #         new_solution = copy.deepcopy(solution)
-        #         to_be_reput_item_list = []
-        #
-        #         # 生成neighbourhood_index个随机数对应bin的index
-        #         clear_bin_list = random.sample(range(0, len(new_solution.bin_list)), neighbourhood_index)
-        #
-        #         # 把这些bin里的item取出来合成一个list，把这些bin删掉
-        #         for clear_bin_index in clear_bin_list:
-        #             to_be_reput_item_list = to_be_reput_item_list + new_solution.bin_list[clear_bin_index].item_list
-        #         new_bin_list = []
-        #         for bin_index in range(len(new_solution.bin_list)):
-        #             if (not (bin_index in clear_bin_list)) and new_solution.bin_list[bin_index].item_list:
-        #                 new_bin_list.append(new_solution.bin_list[bin_index])
-        #         new_solution.bin_list = new_bin_list
-        #
-        #         # 把item分配掉
-        #         new_solution.bin_list = reput_item(to_be_reput_item_list, new_solution.bin_list, new_solution.problem)
-        #         # new_solution.objective = len(new_solution.bin_list)
-        #         # print(new_solution.objective)
-        #
-        #         # 如果有优化，则把当前solution作为下次开始的solution
-        #         # solution = copy.deepcopy(new_solution)
-        #         # print(solution.get_objective(),new_solution.get_objective())
-        #         if new_solution.get_objective() < solution.get_objective():
-        #             # solution = copy.deepcopy(new_solution)
-        #             solution = copy.deepcopy(new_solution)
-        #             no_improve_times = 0
-        #         else:
-        #             no_improve_times = no_improve_times + 1
-        #
-        # # print(len(solution.bin_list))
-        # # for bin in solution.bin_list:
-        # #     print(bin.item_list, end="")
-        # # print("\n")
-        # # print(best_solution.get_objective())
+        # generating a neighbour
+        # x' = new_solution, x = solution, xi = neighbour_solution
+        new_solution = copy.deepcopy(solution)
+        flag = 0
+        outer_i = 0
+        while (solution.get_objective() < new_solution.get_objective() or flag == 0) and outer_i < 100:
+            print(solution.get_objective(), 118)
+            outer_i = outer_i+1
+            flag = 1
+            new_solution = copy.deepcopy(solution)
+            inner_i = 0
+            while solution.get_objective() >= new_solution.get_objective() and inner_i < 100:
+                print(solution.get_objective(), 124)
+                inner_i = inner_i + 1
+                neighbour_solution = copy.deepcopy(solution)
+                clear_bin_num = 3  # .....
+                if neighbourhood_index == 1:
+                    neighbour_solution.bin_list = reput_heuristic(solution.bin_list, clear_bin_num, solution.problem)
+                elif neighbourhood_index == 0:
+                    neighbour_solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
+                else:
+                    neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
+                                                                      solution.problem.capacity)
+
+                print(neighbour_solution.get_objective(), 135)
+                if neighbour_solution.get_objective() < solution.get_objective():
+                    solution = copy.deepcopy(neighbour_solution)
         return solution
 
     def stop(self):
         # 时间超过30s
         # 或 <= solution.problem.best_record
-        if (time.time() - self.start_time) >= 30:
+        if (time.time() - self.start_time) >= 15:
             print("time out!")
             return True
         else:
@@ -170,41 +152,39 @@ class VNS:
     # def f(self,solution):
     #     return solution.objective
 
-    # def shaking(self,solution):
+    def shaking(self,solution):
+        solution.bin_list = split(solution.bin_list, solution.problem.item_num/len(solution.bin_list), solution.problem.capacity, solution.problem.instance, bin_index=None)
+        return solution
 
     def perform_VNS_search(self):
-        # temp
+        # temp_solution(s')
+        # solution(s)
+
         neighbourhood_num = 3
 
         neighbourhood_index = 0
-        # self.best_solution = self.initial_solution
-        # loop_temp_best_solution = self.initial_solution
-        # temp_solution = self.initial_solution
-        # copy.deepcopy(solution)
+
+        solution = copy.deepcopy(self.initial_solution)
         self.best_solution = copy.deepcopy(self.initial_solution)
-        loop_temp_best_solution = copy.deepcopy(self.initial_solution)
-        temp_solution = copy.deepcopy(self.initial_solution)
 
         while not self.stop():
-            # print(self.best_solution.objective)
-            # while neighbourhood_index <= neighbourhood_num:
-            # print('194')
-            temp_solution = self.perform_local_search(temp_solution, neighbourhood_index)
+            while neighbourhood_index < neighbourhood_num:
+                temp_solution = self.perform_local_search(solution, neighbourhood_index)
 
             # if(self.f(temp_solution)<self.f(loop_temp_best_solution)):
-            if temp_solution.get_objective() <= loop_temp_best_solution.get_objective():
-                # print(temp_solution.get_objective())
-
-                loop_temp_best_solution = copy.deepcopy(temp_solution)
-                neighbourhood_index = 1  # Strategies for changing neighbourhoods,might need to be changed
-                continue
-            else:
-
-                neighbourhood_index = neighbourhood_index + 1  # Strategies for changing neighbourhoods,might need to be changed
+                if temp_solution.get_objective() < solution.get_objective():
+                    #print(type(solution.bin_list), neighbourhood_index,173)
+                    solution = copy.deepcopy(temp_solution)
+                    neighbourhood_index = 1  # Strategies for changing neighbourhoods,might need to be changed
+                    continue
+                else:
+                    neighbourhood_index = neighbourhood_index + 1  # Strategies for changing neighbourhoods,might need to be changed
+                print(neighbourhood_index)
         # if self.f(loop_temp_best_solution) < self.f(self.best_solution):
-        if loop_temp_best_solution.get_objective() < self.best_solution.get_objective():
-            self.best_solution = copy.deepcopy(loop_temp_best_solution)
-            # loop_temp_best_solution = self.shaking(loop_temp_best_solution)
+            #print(type(solution.bin_list), neighbourhood_index,181)
+            if solution.get_objective() < self.best_solution.get_objective():
+                self.best_solution = copy.deepcopy(solution)
+            #solution = self.shaking(solution)
         # return best_solution
 
 
@@ -371,7 +351,26 @@ def split(bin_list, average_item_number, capacity, volume_list, bin_index=None):
         new_bin.item_list.append(random_item_index)
         new_bin.cap_left = new_bin.cap_left - volume_list[random_item_index]
     bin_list.append(new_bin)
-    return new_bin
+    return bin_list
+
+
+def reput_heuristic(bin_list, clear_bin_num, problem):
+    to_be_reput_item_list = []
+
+    # 生成neighbourhood_index个随机数对应bin的index
+    clear_bin_list = random.sample(range(0, len(bin_list)), clear_bin_num)
+
+    # 把这些bin里的item取出来合成一个list，把这些bin删掉
+    for clear_bin_index in clear_bin_list:
+        to_be_reput_item_list = to_be_reput_item_list + bin_list[clear_bin_index].item_list
+    new_bin_list = []
+    for bin_index in range(len(bin_list)):
+        if (not (bin_index in clear_bin_list)) and bin_list[bin_index].item_list:
+            new_bin_list.append(bin_list[bin_index])
+
+    # 把item分配掉
+    bin_list = reput_item(to_be_reput_item_list, new_bin_list, problem)
+    return bin_list
 
 
 if __name__ == '__main__':
@@ -383,5 +382,3 @@ if __name__ == '__main__':
         vns = VNS(current_problem)
         vns.perform_VNS_search()
         print(vns.best_solution.get_objective() - vns.initial_solution.problem.best_record)
-
-
