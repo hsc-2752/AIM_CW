@@ -172,7 +172,7 @@ class VNS:
             while neighbourhood_index < neighbourhood_num:
                 # print(temp_solution.get_objective(), neighbourhood_index, "167")
                 temp_solution = self.perform_local_search(temp_solution, neighbourhood_index)
-                #print(202, neighbourhood_index)
+
                 # if(self.f(temp_solution)<self.f(loop_temp_best_solution)):
                 if temp_solution.get_objective() < loop_temp_best_solution.get_objective():
                     # print(temp_solution.get_objective())
@@ -297,6 +297,7 @@ def reput_item(item_list, bin_list, problem):
             test_list.append(item)
             new_bin.cap_left = new_bin.cap_left - item_volume[item]
             bin_list.append(new_bin)
+
     combined = []
     for binn in bin_list:
         combined = combined + binn.item_list
