@@ -31,6 +31,7 @@ class Problem:
         self.capacity = problem_Set.all_capacity[index]
         self.item_num = problem_Set.all_item_num[index]
         self.best_record = problem_Set.all_best_record[index]
+        self.instance_id = problem_Set.all_instance_id[index]
 
 
 class Problem_Set:
@@ -40,6 +41,8 @@ class Problem_Set:
         self.all_capacity = []  # capacity of all instances in the file
         self.all_item_num = []  # item number of all instances in the file
         self.all_best_record = []  # best record of all instances in the file
+        self.all_instance_id = []
+        self.instance_num = 0
         self.load_problem()
 
     def load_problem(self):
@@ -50,6 +53,7 @@ class Problem_Set:
         fp.close()
 
         # process to get problem instance list
+        self.instance_num = content[0]
         del content[0]
 
         start_flag = False
@@ -60,6 +64,7 @@ class Problem_Set:
                 break
             if item[0] == ' ' and item[1].isalpha():
                 self.all_instance.append(current_instance)
+                self.all_instance_id.append(item[1:])
                 current_instance = []
                 start_flag = True
             elif start_flag:
@@ -101,44 +106,27 @@ class VNS:
             flag = 1
             new_solution = copy.deepcopy(solution)
             inner_i = 0
+
             while solution.get_objective() >= new_solution.get_objective() and inner_i < 1000:
-                #print(neighbourhood_index,new_solution.get_objective())
+
                 inner_i = inner_i + 1
                 neighbour_solution = copy.deepcopy(solution)
                 clear_bin_num = 3  # .....
-                # print("108")
+
                 if neighbourhood_index == 2:
-                    neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance, solution.problem.capacity)
-                elif neighbourhood_index <= 1:
-
+                    neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
+                                                                      solution.problem.capacity)
+                elif neighbourhood_index == 0:
                     neighbour_solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
-
-                # elif neighbourhood_index == 0:
-                #     neighbour_solution.bin_list = reput_heuristic(solution.bin_list, clear_bin_num, solution.problem)
-                #     combined = []
-                #     for binn in neighbour_solution.bin_list:
-                #         combined = combined + binn.item_list
-                #     print(len(clear_empty_bin(neighbour_solution.bin_list)), len(combined), "121")
-
-                # for bin in neighbour_solution.bin_list:
-                #     if bin.cap_left < 0:
-                #         print(neighbourhood_index)
-
-                # combined_bin = []
-                # for binn in solution.bin_list:
-                #     #print(binn.item_list)
-                #     combined_bin = combined_bin + binn.item_list
-                # #combined_bin.sort()
-                # print(neighbourhood_index,combined_bin)
-
-                # elif neighbourhood_index == 0:
-                #     neighbour_solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
-                # elif neighbourhood_index == 2:
-                #     neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
-                #                                                       solution.problem.capacity)
+                elif neighbourhood_index == 1:
+                    #     #neighbour_solution.bin_list = reput_heuristic(solution.bin_list, clear_bin_num, solution.problem)
+                    neighbour_solution.bin_list = split(solution.bin_list,
+                                                        solution.problem.item_num / solution.get_objective(),
+                                                        solution.problem.capacity, solution.problem.instance,
+                                                        bin_index=None)
                 if neighbour_solution.get_objective() < solution.get_objective():
                     solution = copy.deepcopy(neighbour_solution)
-        # print(solution.get_objective(), neighbourhood_index)
+
         return solution
 
     def stop(self):
@@ -146,11 +134,31 @@ class VNS:
         # 或 <= solution.problem.best_record
         if (time.time() - self.start_time) >= 15:
             print("time out!")
+            self.check_volume()
             return True
         else:
             if (self.best_solution.get_objective() - self.initial_solution.problem.best_record) <= 0:
                 return True
         return False
+
+    def check_volume(self):
+        volume_list = self.best_solution.problem.instance
+        combined = []
+        for bin in self.best_solution.bin_list:
+            combined = combined + bin.item_list
+            sum = 0
+            for item_index in bin.item_list:
+                sum = sum + volume_list[item_index]
+            print(sum)
+
+        print(len(combined), "len combined")
+        set_lst = set(combined)
+        if len(set_lst) == len(combined):
+            print('列表里的元素互不重复！')
+        else:
+            print('列表里有重复的元素！')
+
+
 
     def perform_VNS_search(self):
         neighbourhood_num = 3
@@ -189,11 +197,9 @@ class VNS:
 
 
 def reput_heuristic(bin_list, clear_bin_num, problem):
-    # combined = []
-    # for binn in bin_list:
-    #     combined = combined + binn.item_list
-    # print(len(clear_empty_bin(bin_list)),len(combined),"191")
-    # to_be_reput_item_list = []
+    bin_list = clear_empty_bin(bin_list)
+
+    to_be_reput_item_list = []
 
     # 生成neighbourhood_index个随机数对应bin的index
     clear_bin_list = random.sample(range(0, len(bin_list)), clear_bin_num)
@@ -207,20 +213,9 @@ def reput_heuristic(bin_list, clear_bin_num, problem):
             new_bin_list.append(bin_list[bin_index])
 
     # 把item分配掉
-    bin_list = reput_item(to_be_reput_item_list, new_bin_list, problem)
+    new_bin_list = reput_item(to_be_reput_item_list, new_bin_list, problem)
 
-    # combined = []
-    # for binn in bin_list:
-    #     combined = combined + binn.item_list
-    # print(len(clear_empty_bin(bin_list)),len(combined),"196")
-    # combined.sort()
-    # print(combined)
-    # combined = []
-    # for binn in bin_list:
-    #     combined = combined + binn.item_list
-    # print(len(clear_empty_bin(bin_list)),len(combined),"217")
-
-    return clear_empty_bin(bin_list)
+    return clear_empty_bin(new_bin_list)
 
 
 def clear_empty_bin(bin_list):
@@ -298,14 +293,6 @@ def reput_item(item_list, bin_list, problem):
             new_bin.cap_left = new_bin.cap_left - item_volume[item]
             bin_list.append(new_bin)
 
-    combined = []
-    for binn in bin_list:
-        combined = combined + binn.item_list
-    # print(combined,"259")
-    # # combined.sort()
-    # print(item_list)
-    # print(test_list,"282")
-
     return bin_list
 
 
@@ -335,9 +322,9 @@ def randomBin_reshuffle(bin_list, item_volume, capacity):
     # while bin_1_index == bin_2_index:
     #     bin_2_index = ran_bin_by_proba(bin_list)
     if bin_1_index == bin_2_index:
-        #print("wocaonima")
+        # print("wocaonima")
         return bin_list
-    #print(bin_1_index,bin_2_index)
+    # print(bin_1_index,bin_2_index)
     reshuffle_item_list = bin_list[bin_1_index].item_list + bin_list[bin_2_index].item_list
 
     for i in range(int(math.pow(2, len(reshuffle_item_list)))):
@@ -414,7 +401,7 @@ def largestBin_largestItem(bin_list, item_volume):
     #     random_item_index = bin_list[random_bin_index].item_list[
     #         random.randint(0, len(bin_list[random_bin_index].item_list) - 1)]
     if not (item_volume[random_item_index] < item_volume[largest_item_index] < bin_list[random_bin_index].cap_left +
-                item_volume[random_item_index]):
+            item_volume[random_item_index]):
         return bin_list
     # swap
     # print("largest_item_index",largest_item_index,item_volume[largest_item_index])
@@ -461,12 +448,32 @@ def split(bin_list, average_item_number, capacity, volume_list, bin_index=None):
     return clear_empty_bin(bin_list)
 
 
+# write solution of single problem to the file
+def write_to_file(solution):
+    # file_handle = open(solution_file_name,mode = 'a')
+    file_handle.write(solution.problem.instance_id)
+    file_handle.write(" obj=   " + str(solution.get_objective()) + '\t' + str(solution.get_objective()-solution.problem.best_record))
+    file_handle.write('\n')
+    for bin in solution.bin_list:
+        if not bin.item_list:
+            continue
+        for item in bin.item_list:
+            file_handle.write(str(item)+' ')
+        file_handle.write('\n')
+
+
+
 if __name__ == '__main__':
-    file_name = "binpack3.txt"
+    file_name = "binpack1.txt"
+    solution_file_name = 'binpack1_sln.txt'
     # max_time =
     current_problem_set = Problem_Set(file_name)
+    file_handle = open(solution_file_name, mode='a')
+    file_handle.write(str(current_problem_set.instance_num))
     for i in range(len(current_problem_set.all_instance)):
         current_problem = Problem(current_problem_set, i)
         vns = VNS(current_problem)
         vns.perform_VNS_search()
+        write_to_file(vns.best_solution)
         print(vns.best_solution.get_objective() - vns.initial_solution.problem.best_record)
+    file_handle.close()
