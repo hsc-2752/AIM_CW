@@ -2,6 +2,10 @@ import time
 import copy
 import random
 import math
+import sys
+
+
+
 
 
 class Bin:
@@ -132,7 +136,7 @@ class VNS:
     def stop(self):
         # 时间超过30s
         # 或 <= solution.problem.best_record
-        if (time.time() - self.start_time) >= 15:
+        if (time.time() - self.start_time) >= max_time:
             print("time out!")
             self.check_volume()
             return True
@@ -464,9 +468,12 @@ def write_to_file(solution):
 
 
 if __name__ == '__main__':
-    file_name = "binpack1.txt"
-    solution_file_name = 'binpack1_sln.txt'
-    # max_time =
+    global max_time
+    print(str(sys.argv))
+    file_name = sys.argv[2]
+    solution_file_name = sys.argv[4]
+    max_time = int(sys.argv[-1])
+    #  ./2019560 -s data_fle -o solution_file -t max_time
     current_problem_set = Problem_Set(file_name)
     file_handle = open(solution_file_name, mode='a')
     file_handle.write(str(current_problem_set.instance_num))
