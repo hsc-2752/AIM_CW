@@ -26,6 +26,19 @@ class Solution:
                 objective = objective + 1
         return objective
 
+    def fitness(self):
+        sum1 = 0.0
+        sum2 = 0.0
+        N = 0
+        for bin in self.bin_list:
+            if bin.item_list:
+                N = N + 1
+                sum1 = sum1 + bin.cap_left
+                sum2 = sum2 + bin.cap_left ** 2
+        mean = sum1 / N
+        var = sum2 / N - mean ** 2
+        return var
+
 
 class Problem:
     def __init__(self, problem_Set, index):
@@ -94,6 +107,7 @@ class VNS:
     def get_initial_solution(self):
         self.initial_solution.bin_list = greedy_search(self.initial_solution.problem.instance,
                                                        self.initial_solution.problem.capacity)
+        # print(self.initial_solution.get_objective()-self.initial_solution.problem.best_record)
         self.initial_solution.feasibility = True
 
     def perform_local_search(self, solution, neighbourhood_index):
@@ -118,12 +132,12 @@ class VNS:
                 if neighbourhood_index == 1:
                     neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
                                                                       solution.problem.capacity)
-                    #print("1")
-                    check(neighbour_solution)
+                    # #print("1")
+                    # check(neighbour_solution)
                 elif neighbourhood_index == 0:
                     neighbour_solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
-                    #print("2")
-                    check(neighbour_solution)
+                    # #print("0")
+                    # check(neighbour_solution)
                 # elif neighbourhood_index == 3:
                 #     temp_solution = copy.deepcopy(solution)
                 #     neighbour_solution.bin_list = reput_heuristic(temp_solution.bin_list, clear_bin_num, solution.problem)
@@ -132,15 +146,54 @@ class VNS:
                 #     # print("neighbour_solution")
                 #     # check_item_num_in_solution(neighbour_solution)
                 elif neighbourhood_index == 2:
-                    check(solution)
+                    # print("2")
+                    # check(solution)
                     neighbour_solution.bin_list = split(solution.bin_list,
                                                         solution.problem.item_num / solution.get_objective(),
                                                         solution.problem.capacity, solution.problem.instance,
                                                         bin_index=None)
-                    check(neighbour_solution)
+                    # check(neighbour_solution)
                     # shift(solution.bin_list, solution.problem.instance)
                 if neighbour_solution.get_objective() <= solution.get_objective():
                     solution = copy.deepcopy(neighbour_solution)
+
+        return solution
+
+    def perform_local_search_best_descent(self, solution, neighbourhood_index):
+        # generating a neighbour
+        # x' = new_solution, x = solution, xi = neighbour_solution
+        # new_solution = copy.deepcopy(solution)
+        # flag = 0
+        # outer_i = 0
+        inner_i = 0
+        neighbour_solution = copy.deepcopy(solution)
+
+        # while (solution.get_objective() < new_solution.get_objective() or flag == 0) and outer_i < 1000:
+        #     outer_i = outer_i + 1
+        #     flag = 1
+        #     new_solution = copy.deepcopy(solution)
+        #     inner_i = 0
+
+        while neighbour_solution.get_objective() >= solution.get_objective() and inner_i < 1000:
+            inner_i = inner_i + 1
+            neighbour_solution = copy.deepcopy(solution)
+
+            if neighbourhood_index == 1:
+                neighbour_solution.bin_list = randomBin_reshuffle(solution.bin_list, solution.problem.instance,
+                                                                  solution.problem.capacity)
+
+            elif neighbourhood_index == 0:
+                neighbour_solution.bin_list = largestBin_largestItem(solution.bin_list, solution.problem.instance)
+
+            elif neighbourhood_index == 2:
+
+                neighbour_solution.bin_list = split(solution.bin_list,
+                                                    solution.problem.item_num / solution.get_objective(),
+                                                    solution.problem.capacity, solution.problem.instance,
+                                                    bin_index=None)
+
+            if neighbour_solution.fitness() < solution.fitness():
+                solution = copy.deepcopy(neighbour_solution)
 
         return solution
 
@@ -176,9 +229,10 @@ class VNS:
 
         while not self.stop():
             # print(neighbourhood_index, "172")
-            while neighbourhood_index < neighbourhood_num:
+            while neighbourhood_index < neighbourhood_num and not self.stop():
                 # print(temp_solution.get_objective(), neighbourhood_index, "167")
-                solution_prime = self.perform_local_search(solution, neighbourhood_index)
+                #solution_prime = self.perform_local_search(solution, neighbourhood_index)
+                solution_prime = self.perform_local_search_best_descent(solution, neighbourhood_index)
 
                 # if(self.f(temp_solution)<self.f(loop_temp_best_solution)):
                 if solution_prime.get_objective() < solution.get_objective():
@@ -426,7 +480,7 @@ def largestBin_largestItem(bin_list, item_volume):
 #        if the number of items in the current bin exceeds the average item numbers per bin.
 
 def split(bin_list, average_item_number, capacity, volume_list, bin_index=None):
-    #bin_list = clear_empty_bin(bin_list)
+    # bin_list = clear_empty_bin(bin_list)
     # randomly choose a bin in which the number of items exceeds the average item numbers per bin
     if bin_index is None:
         bin_index = random.randint(0, len(bin_list) - 1)
@@ -504,7 +558,6 @@ if __name__ == '__main__':
     file_name = sys.argv[2]
     solution_file_name = sys.argv[4]
     max_time = int(sys.argv[-1])
-    #  ./2019560 -s data_fle -o solution_file -t max_time
     current_problem_set = Problem_Set(file_name)
     file_handle = open(solution_file_name, mode='a')
     file_handle.write(str(current_problem_set.instance_num))
