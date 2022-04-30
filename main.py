@@ -205,7 +205,7 @@ class VNS:
             # self.check_volume()
             return True
         else:
-            if (self.best_solution.get_objective() - self.initial_solution.problem.best_record) <= 1:
+            if (self.best_solution.get_objective() - self.initial_solution.problem.best_record) <= 0:
                 return True
         return False
 
